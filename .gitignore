@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+env/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+build/
+.vite/
+
+# Environment secrets
+.env
+.env.local
+.env.*.local
+
+# Docker
+docker-compose.override.yml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Logs
+*.log
+logs/
+
+# Generated media (large files, don't belong in git)
+*.mid
+*.wav
+*.mp3
+!tests/fixtures/*.mid
+
+# Python build artifacts
+*.egg
+build/
+dist/
+*.egg-info/
