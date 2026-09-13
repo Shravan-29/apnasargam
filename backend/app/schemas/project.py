@@ -21,3 +21,10 @@ class ProjectResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ProjectUpdate(BaseModel):
+    name: Optional[str] = None
+    genre: Optional[str] = None
+    mood: Optional[str] = None
+    bpm: Optional[int] = None
+    musical_key: Optional[str] = None        
