@@ -1,18 +1,15 @@
-import Navbar from './components/Navbar'
-import Hero from './components/Hero'
-import PromptDemo from './components/PromptDemo'
-import Features from './components/Features'
-import Footer from './components/Footer'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import LandingPage from './components/LandingPage'
+import Dashboard from './components/Dashboard'
 
 function App() {
   return (
-    <div className="bg-bg text-text">
-      <Navbar />
-      <Hero />
-      <PromptDemo />
-      <Features />
-      <Footer />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
