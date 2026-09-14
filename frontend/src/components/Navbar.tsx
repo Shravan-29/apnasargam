@@ -21,11 +21,11 @@ export default function Navbar() {
       </div>
 
       <Link
-        to="/dashboard"
-        className="px-5 py-2.5 rounded-full bg-text text-bg text-sm font-semibold hover:-translate-y-0.5 transition-transform"
-      >
-        Start Creating
-      </Link>
+  to="/login"
+  className="px-5 py-2.5 rounded-full bg-text text-bg text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+>
+  Start Creating
+</Link>
     </nav>
   )
 }
