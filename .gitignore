@@ -36,6 +36,7 @@ logs/
 
 # Generated media (large files, don't belong in git)
 *.mid
+generated_midi/
 *.wav
 *.mp3
 !tests/fixtures/*.mid

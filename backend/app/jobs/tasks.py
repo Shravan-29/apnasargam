@@ -1,15 +1,27 @@
-import time
+import os
+import uuid
+
+from app.generation.melody_generator import generate_melody
+from app.generation.midi_export import notes_to_midi
+
+OUTPUT_DIR = "generated_midi"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
-def dummy_generation_task(project_name: str) -> dict:
+def generate_music_task(key: str, mood: str, bpm: int, project_name: str) -> dict:
     """
-    Placeholder for the real AI generation task (built in the next phase).
-    Simulates a slow operation so we can verify the queue + worker mechanism
-    works correctly before wiring in actual AI logic.
+    The real AI/generation task — replaces the earlier dummy placeholder.
+    Runs inside the RQ worker process, not the API request thread.
     """
-    time.sleep(5)  # simulate slow AI generation
+    notes = generate_melody(key=key, mood=mood, bpm=bpm, duration_bars=8)
+
+    filename = f"{uuid.uuid4()}.mid"
+    output_path = os.path.join(OUTPUT_DIR, filename)
+    notes_to_midi(notes, bpm=bpm, output_path=output_path)
+
     return {
         "status": "completed",
         "project_name": project_name,
-        "result": "fake_midi_data",
+        "midi_file": filename,
+        "note_count": len(notes),
     }
