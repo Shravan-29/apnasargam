@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.api.v1 import projects, auth
+from app.api.v1 import projects, auth, jobs
 
 app = FastAPI(title=settings.app_name)
 
@@ -16,6 +16,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(projects.router)
+app.include_router(jobs.router)
 
 @app.get("/health")
 def health_check():
