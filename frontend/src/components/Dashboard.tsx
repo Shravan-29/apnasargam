@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchProjects, createProject } from '../api'
+import { Link } from 'react-router-dom'
 
 interface Project {
   id: number
@@ -69,14 +70,22 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-bg text-text px-12 py-16">
       <div className="flex items-center justify-between mb-12">
-        <h1 className="font-display text-3xl font-bold">My Projects</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-5 py-2.5 rounded-full bg-gold text-black text-sm font-semibold hover:-translate-y-0.5 transition-transform"
-        >
-          {showForm ? 'Cancel' : '+ New Project'}
-        </button>
-      </div>
+  <h1 className="font-display text-3xl font-bold">My Projects</h1>
+  <div className="flex gap-3">
+    <Link
+      to="/generate"
+      className="px-5 py-2.5 rounded-full bg-gold text-black text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+    >
+      Generate Music
+    </Link>
+    <button
+      onClick={() => setShowForm(!showForm)}
+      className="px-5 py-2.5 rounded-full bg-gold text-black text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+    >
+      {showForm ? 'Cancel' : '+ New Project'}
+    </button>
+  </div>
+</div>
 
       {showForm && (
         <form

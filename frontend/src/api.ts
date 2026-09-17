@@ -63,3 +63,30 @@ export async function createProject(
 
   return response.json()
 }
+export async function generateMusic(
+  token: string,
+  data: { project_name: string; key: string; mood: string; bpm: number }
+) {
+  const response = await fetch(`${API_BASE_URL}/api/v1/jobs/generate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) throw new Error('Failed to start generation')
+  return response.json()
+}
+
+export async function getJobStatus(token: string, jobId: string) {
+  const response = await fetch(`${API_BASE_URL}/api/v1/jobs/${jobId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) throw new Error('Failed to fetch job status')
+  return response.json()
+}
+
+export function getMidiDownloadUrl(jobId: string, token: string) {
+  return `${API_BASE_URL}/api/v1/jobs/${jobId}/midi?token=${token}`
+}

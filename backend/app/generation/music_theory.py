@@ -1,6 +1,3 @@
-# Notes are represented as MIDI pitch numbers.
-# Middle C (C4) = 60 in MIDI numbering.
-
 SCALES = {
     "C Major": [60, 62, 64, 65, 67, 69, 71, 72],
     "A Minor": [57, 59, 60, 62, 64, 65, 67, 69],
@@ -9,8 +6,6 @@ SCALES = {
     "G Major": [67, 69, 71, 72, 74, 76, 78, 79],
 }
 
-# Chord progressions expressed as scale-degree indices (0-indexed into SCALES list)
-# e.g. "I-V-vi-IV" is a very common pop progression
 CHORD_PROGRESSIONS = {
     "pop": [0, 4, 5, 3],       # I - V - vi - IV
     "sad": [5, 3, 0, 4],       # vi - IV - I - V
@@ -28,13 +23,24 @@ MOOD_TO_PROGRESSION = {
     "Romantic": "sad",
 }
 
-
 def get_scale_notes(key: str) -> list[int]:
     if key not in SCALES:
         raise ValueError(f"Unsupported key: {key}. Supported: {list(SCALES.keys())}")
     return SCALES[key]
 
-
 def get_chord_progression(mood: str) -> list[int]:
     progression_name = MOOD_TO_PROGRESSION.get(mood, "pop")
     return CHORD_PROGRESSIONS[progression_name]
+
+MOOD_PARAMS = {
+    "Dark":        {"register_shift": -12, "density": "sparse",  "velocity_range": (60, 85)},
+    "Uplifting":   {"register_shift": 0,   "density": "medium",  "velocity_range": (85, 110)},
+    "Calm":        {"register_shift": -5,  "density": "sparse",  "velocity_range": (55, 75)},
+    "Energetic":   {"register_shift": 5,   "density": "dense",   "velocity_range": (90, 115)},
+    "Melancholic": {"register_shift": -7,  "density": "sparse",  "velocity_range": (50, 70)},
+    "Epic":        {"register_shift": 0,   "density": "medium",  "velocity_range": (95, 120)},
+    "Romantic":    {"register_shift": -3,  "density": "medium",  "velocity_range": (65, 90)},
+}
+
+def get_mood_params(mood: str) -> dict:
+    return MOOD_PARAMS.get(mood, MOOD_PARAMS["Uplifting"])
