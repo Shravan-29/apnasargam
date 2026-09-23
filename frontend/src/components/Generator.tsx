@@ -132,7 +132,7 @@ export default function Generator() {
     {/* @ts-expect-error - html-midi-player is a web component without TS types */}
     <midi-player
       src={getMidiDownloadUrl(jobId, token)}
-      sound-font
+      sound-font="https://storage.googleapis.com/magentadata/js/soundfonts/sgm_plus"
       visualizer="#myVisualizer"
     />
 

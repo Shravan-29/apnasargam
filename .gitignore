@@ -46,3 +46,7 @@ generated_midi/
 build/
 dist/
 *.egg-info/
+backend/dataset/
+backend/app/generation/*.joblib
+backend/app/generation/trained_model.pt
+backend/app/generation/vocabulary.pt
