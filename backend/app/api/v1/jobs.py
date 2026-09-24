@@ -10,6 +10,8 @@ from app.db.session import get_db
 from app.models.user import User
 from app.jobs.tasks import generate_music_task
 from app.schemas.generation import GenerationRequest
+from app.schemas.generation import GenerationRequest, PromptGenerationRequest
+from app.jobs.tasks import generate_music_task, generate_from_prompt_task
 
 router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 
@@ -28,6 +30,19 @@ def enqueue_generation(
     )
     return {"job_id": job.id, "status": "queued"}
 
+@router.post("/generate-from-prompt")
+def enqueue_prompt_generation(
+    request: PromptGenerationRequest,
+    current_user: User = Depends(get_current_user),
+):
+    job = generation_queue.enqueue(
+        generate_from_prompt_task,
+        prompt=request.prompt,
+        key=request.key,
+        bpm=request.bpm,
+        project_name=request.project_name,
+    )
+    return {"job_id": job.id, "status": "queued"}
 
 @router.get("/{job_id}")
 def get_job_status(job_id: str, current_user: User = Depends(get_current_user)):

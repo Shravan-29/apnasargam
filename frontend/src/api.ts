@@ -78,6 +78,21 @@ export async function generateMusic(
   if (!response.ok) throw new Error('Failed to start generation')
   return response.json()
 }
+export async function generateFromPrompt(
+  token: string,
+  data: { project_name: string; prompt: string; key: string; bpm: number }
+) {
+  const response = await fetch(`${API_BASE_URL}/api/v1/jobs/generate-from-prompt`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) throw new Error('Failed to start generation')
+  return response.json()
+}
 
 export async function getJobStatus(token: string, jobId: string) {
   const response = await fetch(`${API_BASE_URL}/api/v1/jobs/${jobId}`, {

@@ -75,3 +75,16 @@ def get_mood_params(mood: str) -> dict:
 def get_raga_scale(mood: str) -> list[int]:
     raga_name = RAGA_MOOD_MAP.get(mood, "Bhupali")
     return RAGA_SCALES[raga_name]
+
+MOOD_INSTRUMENTATION = {
+    "Dark":        {"melody_program": 44, "harmony_program": 52, "drum_style": "none"},
+    "Uplifting":   {"melody_program": 0,  "harmony_program": 48, "drum_style": "medium"},
+    "Calm":        {"melody_program": 73, "harmony_program": 20, "drum_style": "none"},
+    "Energetic":   {"melody_program": 81, "harmony_program": 38, "drum_style": "four_on_floor"},
+    "Melancholic": {"melody_program": 73, "harmony_program": 20, "drum_style": "none"},
+    "Epic":        {"melody_program": 56, "harmony_program": 48, "drum_style": "war_drums"},
+    "Romantic":    {"melody_program": 73, "harmony_program": 20, "drum_style": "none"},
+}
+
+def get_instrumentation(mood: str) -> dict:
+    return MOOD_INSTRUMENTATION.get(mood, MOOD_INSTRUMENTATION["Uplifting"])
