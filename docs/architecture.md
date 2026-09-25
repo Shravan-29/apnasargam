@@ -182,3 +182,14 @@ Follows the 27-phase roadmap, grouped:
 | AI generation quality below expectations initially | Fine-tune existing open model rather than train from scratch; set honest expectations |
 | Solo-dev scope creep vs 27-phase plan | Treat Phases 1–11 as MVP milestone; re-scope explicitly if behind |
 | Free-tier compute ceiling hit by real usage | Architecture is scale-ready by design (ADR-004); upgrade is config-level |
+
+## 13. Known Security Considerations
+
+- `html-midi-player` (used for in-browser MIDI playback) has transitive
+  dependencies (`protobufjs`, `ndarray-resample` via `@magenta/music`)
+  with known CVEs and no upstream fix currently available. Risk is
+  assessed as low for this project: these are client-side-only
+  dependencies, and the app never parses untrusted protobuf input.
+  Documented here rather than suppressed; a future mitigation would be
+  replacing this library with a lighter, actively-maintained MIDI
+  player if this becomes a production concern.

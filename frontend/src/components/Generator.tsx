@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { generateMusic, generateFromPrompt, getJobStatus, getMidiDownloadUrl } from '../api'
+import TimelineEditor from './TimelineEditor'
+import ReactiveVisualizer from './ReactiveVisualizer'
 
 const KEYS = ['C Major', 'A Minor', 'D Minor', 'F# Minor', 'G Major']
 const MOODS = ['Dark', 'Uplifting', 'Calm', 'Energetic', 'Melancholic', 'Epic', 'Romantic']
@@ -17,6 +19,9 @@ export default function Generator() {
   const [status, setStatus] = useState<'idle' | 'queued' | 'generating' | 'ready' | 'error'>('idle')
   const [jobId, setJobId] = useState<string | null>(null)
   const [predictedMood, setPredictedMood] = useState<string | null>(null)
+  const [currentMidiUrl, setCurrentMidiUrl] = useState<string | null>(null)
+
+  const playerRef = useRef<HTMLElement>(null)
   const navigate = useNavigate()
 
   const handleGenerate = async (e: React.FormEvent) => {
@@ -29,6 +34,7 @@ export default function Generator() {
 
     setStatus('queued')
     setPredictedMood(null)
+    setCurrentMidiUrl(null)
     try {
       const job =
         mode === 'prompt'
@@ -52,6 +58,7 @@ export default function Generator() {
           if (data.result?.predicted_mood) {
             setPredictedMood(data.result.predicted_mood)
           }
+          setCurrentMidiUrl(getMidiDownloadUrl(id, token))
         } else if (data.status === 'failed') {
           clearInterval(interval)
           setStatus('error')
@@ -62,8 +69,6 @@ export default function Generator() {
       }
     }, 1000)
   }
-
-  const token = localStorage.getItem('apnasargam_token') || ''
 
   return (
     <div className="min-h-screen bg-bg text-text px-12 py-16">
@@ -168,27 +173,25 @@ export default function Generator() {
         </button>
       </form>
 
-      {status === 'ready' && jobId && (
+      {status === 'ready' && jobId && currentMidiUrl && (
         <div className="max-w-xl mt-8 rounded-2xl border border-white/10 bg-bg-soft p-8">
-          <h3 className="font-semibold mb-2">Your track is ready</h3>
-          {predictedMood && (
-            <p className="text-sm text-gold mb-4">Detected mood: {predictedMood}</p>
-          )}
-          {/* @ts-expect-error - web component */}
-          <midi-player
-            src={getMidiDownloadUrl(jobId, token)}
-            sound-font
-            visualizer="#myVisualizer"
-          />
-          {/* @ts-expect-error - web component */}
-          <midi-visualizer id="myVisualizer" src={getMidiDownloadUrl(jobId, token)} />
-          
-           <a href={getMidiDownloadUrl(jobId, token)}
-            download
-            className="inline-block mt-4 text-sm text-gold hover:underline"
-          >
+          <h3 className="font-semibold mb-2">Your track</h3>
+          {predictedMood && <p className="text-sm text-gold mb-4">Detected mood: {predictedMood}</p>}
+
+          {/* @ts-expect-error - html-midi-player is a web component without TS types */}
+          <midi-player ref={playerRef} src={currentMidiUrl} sound-font style={{ width: '100%' }} />
+
+          <div className="mt-3">
+            <ReactiveVisualizer playerRef={playerRef} />
+          </div>
+
+          <a href={currentMidiUrl} download className="inline-block mt-4 text-sm text-gold hover:underline">
             Download MIDI
           </a>
+
+          <div className="mt-6">
+            <TimelineEditor midiUrl={currentMidiUrl} onExport={(url) => setCurrentMidiUrl(url)} />
+          </div>
         </div>
       )}
 
