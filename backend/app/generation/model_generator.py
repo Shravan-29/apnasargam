@@ -26,7 +26,7 @@ def generate_melody_ml(key: str, mood: str, bpm: int, duration_bars: int = 8, st
     v_min, v_max = mood_params["velocity_range"]
 
     target_beats = duration_bars * 4
-    raw_sequence = generate_raw_sequence(num_events=target_beats * 2)
+    raw_sequence = generate_raw_sequence(min_duration_beats=target_beats)
 
     melody_notes = []
     chord_notes = []
