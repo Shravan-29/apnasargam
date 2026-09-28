@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 
 from app.db.session import Base
 
+
 class Project(Base):
     __tablename__ = "projects"
 
@@ -14,6 +15,7 @@ class Project(Base):
     mood = Column(String, nullable=True)
     bpm = Column(Integer, nullable=True)
     musical_key = Column(String, nullable=True)
+    midi_filename = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

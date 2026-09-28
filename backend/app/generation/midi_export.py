@@ -15,8 +15,9 @@ def notes_to_midi(
     output_path: str,
     mood: str = "Uplifting",
     style: str = "western",
+    genre: str | None = None,
 ) -> str:
-    profile = INDIAN_FOLK_PROFILE if style == "indian_folk" else get_instrumentation(mood)
+    profile = INDIAN_FOLK_PROFILE if style == "indian_folk" else get_instrumentation(mood, genre)
 
     midi = pretty_midi.PrettyMIDI(initial_tempo=bpm)
     seconds_per_beat = 60.0 / bpm

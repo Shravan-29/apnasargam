@@ -9,7 +9,6 @@ SCALES = {
     "G Major": [67, 69, 71, 72, 74, 76, 78, 79],
 }
 
-# Chord progressions expressed as scale-degree indices (0-indexed into SCALES list)
 CHORD_PROGRESSIONS = {
     "pop": [0, 4, 5, 3],
     "sad": [5, 3, 0, 4],
@@ -37,9 +36,6 @@ MOOD_PARAMS = {
     "Romantic": {"register_shift": -3, "density": "medium", "velocity_range": (65, 90)},
 }
 
-# Indian classical/folk raga scales, expressed as MIDI pitch numbers.
-# These are structurally different from Western major/minor scales,
-# which gives generated melodies a distinctly Indian folk character.
 RAGA_SCALES = {
     "Yaman": [60, 62, 64, 66, 67, 69, 71, 72],
     "Bhairav": [60, 61, 64, 65, 67, 68, 71, 72],
@@ -54,6 +50,34 @@ RAGA_MOOD_MAP = {
     "Dark": "Bhairav",
     "Epic": "Yaman",
     "Energetic": "Bhupali",
+}
+
+# Mood-based default instrumentation, used when no genre is explicitly selected.
+MOOD_INSTRUMENTATION = {
+    "Dark":        {"melody_program": 44, "harmony_program": 52, "drum_style": "none"},
+    "Uplifting":   {"melody_program": 0,  "harmony_program": 48, "drum_style": "medium"},
+    "Calm":        {"melody_program": 73, "harmony_program": 20, "drum_style": "none"},
+    "Energetic":   {"melody_program": 81, "harmony_program": 38, "drum_style": "four_on_floor"},
+    "Melancholic": {"melody_program": 73, "harmony_program": 20, "drum_style": "none"},
+    "Epic":        {"melody_program": 56, "harmony_program": 48, "drum_style": "war_drums"},
+    "Romantic":    {"melody_program": 73, "harmony_program": 20, "drum_style": "none"},
+}
+
+# Genre profiles override mood-based instrumentation when explicitly
+# selected by the user. Each genre genuinely changes what gets played:
+# melody instrument, harmony instrument, and drum pattern - this is
+# deliberately rule-based (not a separately-trained genre model), since
+# genre here is expressed through orchestration and rhythm-section
+# convention, which is how these styles are audibly distinguished.
+GENRE_INSTRUMENTATION = {
+    "Rock":       {"melody_program": 30, "harmony_program": 33, "drum_style": "rock"},
+    "Jazz":       {"melody_program": 4,  "harmony_program": 32, "drum_style": "swing"},
+    "Hip-hop":    {"melody_program": 4,  "harmony_program": 38, "drum_style": "hiphop"},
+    "Electronic": {"melody_program": 81, "harmony_program": 38, "drum_style": "four_on_floor"},
+    "Classical":  {"melody_program": 0,  "harmony_program": 48, "drum_style": "none"},
+    "Cinematic":  {"melody_program": 56, "harmony_program": 48, "drum_style": "war_drums"},
+    "Lo-fi":      {"melody_program": 4,  "harmony_program": 32, "drum_style": "lofi"},
+    "Ambient":    {"melody_program": 89, "harmony_program": 91, "drum_style": "none"},
 }
 
 
@@ -76,15 +100,8 @@ def get_raga_scale(mood: str) -> list[int]:
     raga_name = RAGA_MOOD_MAP.get(mood, "Bhupali")
     return RAGA_SCALES[raga_name]
 
-MOOD_INSTRUMENTATION = {
-    "Dark":        {"melody_program": 44, "harmony_program": 52, "drum_style": "none"},
-    "Uplifting":   {"melody_program": 0,  "harmony_program": 48, "drum_style": "medium"},
-    "Calm":        {"melody_program": 73, "harmony_program": 20, "drum_style": "none"},
-    "Energetic":   {"melody_program": 81, "harmony_program": 38, "drum_style": "four_on_floor"},
-    "Melancholic": {"melody_program": 73, "harmony_program": 20, "drum_style": "none"},
-    "Epic":        {"melody_program": 56, "harmony_program": 48, "drum_style": "war_drums"},
-    "Romantic":    {"melody_program": 73, "harmony_program": 20, "drum_style": "none"},
-}
 
-def get_instrumentation(mood: str) -> dict:
+def get_instrumentation(mood: str, genre: str | None = None) -> dict:
+    if genre and genre in GENRE_INSTRUMENTATION:
+        return GENRE_INSTRUMENTATION[genre]
     return MOOD_INSTRUMENTATION.get(mood, MOOD_INSTRUMENTATION["Uplifting"])

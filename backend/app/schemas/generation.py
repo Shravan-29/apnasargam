@@ -6,6 +6,8 @@ class GenerationRequest(BaseModel):
     key: str
     mood: str
     bpm: int = 120
+    genre: str | None = None
+    style: str = "western"
 
 
 class PromptGenerationRequest(BaseModel):
@@ -13,6 +15,8 @@ class PromptGenerationRequest(BaseModel):
     prompt: str
     key: str = "C Major"
     bpm: int = 110
+    genre: str | None = None
+    style: str = "western"
 
 
 class JobStatusResponse(BaseModel):

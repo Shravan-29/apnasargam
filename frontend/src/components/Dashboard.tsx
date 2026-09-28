@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { fetchProjects, createProject } from '../api'
-import { Link } from 'react-router-dom'
 
 interface Project {
   id: number
@@ -70,22 +69,22 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-bg text-text px-12 py-16">
       <div className="flex items-center justify-between mb-12">
-  <h1 className="font-display text-3xl font-bold">My Projects</h1>
-  <div className="flex gap-3">
-    <Link
-      to="/generate"
-      className="px-5 py-2.5 rounded-full bg-gold text-black text-sm font-semibold hover:-translate-y-0.5 transition-transform"
-    >
-      Generate Music
-    </Link>
-    <button
-      onClick={() => setShowForm(!showForm)}
-      className="px-5 py-2.5 rounded-full bg-gold text-black text-sm font-semibold hover:-translate-y-0.5 transition-transform"
-    >
-      {showForm ? 'Cancel' : '+ New Project'}
-    </button>
-  </div>
-</div>
+        <h1 className="font-display text-3xl font-bold">My Projects</h1>
+        <div className="flex gap-3">
+          <Link
+            to="/generate"
+            className="px-5 py-2.5 rounded-full bg-gold text-black text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+          >
+            Generate Music
+          </Link>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-5 py-2.5 rounded-full bg-gold text-black text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+          >
+            {showForm ? 'Cancel' : '+ New Project'}
+          </button>
+        </div>
+      </div>
 
       {showForm && (
         <form
@@ -102,42 +101,42 @@ export default function Dashboard() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-  <label className="text-sm text-muted">Genre</label>
-  <select
-    value={genre}
-    onChange={(e) => setGenre(e.target.value)}
-    required
-    className="rounded-lg border border-white/10 bg-bg px-4 py-2.5 text-sm outline-none focus:border-gold transition-colors"
-  >
-    <option value="">Select genre</option>
-    <option value="Cinematic">Cinematic</option>
-    <option value="Lo-fi">Lo-fi</option>
-    <option value="Ambient">Ambient</option>
-    <option value="Electronic">Electronic</option>
-    <option value="Classical">Classical</option>
-    <option value="Jazz">Jazz</option>
-    <option value="Rock">Rock</option>
-    <option value="Hip-hop">Hip-hop</option>
-  </select>
-</div>
+            <label className="text-sm text-muted">Genre</label>
+            <select
+              value={genre}
+              onChange={(e) => setGenre(e.target.value)}
+              required
+              className="rounded-lg border border-white/10 bg-bg px-4 py-2.5 text-sm outline-none focus:border-gold transition-colors"
+            >
+              <option value="">Select genre</option>
+              <option value="Cinematic">Cinematic</option>
+              <option value="Lo-fi">Lo-fi</option>
+              <option value="Ambient">Ambient</option>
+              <option value="Electronic">Electronic</option>
+              <option value="Classical">Classical</option>
+              <option value="Jazz">Jazz</option>
+              <option value="Rock">Rock</option>
+              <option value="Hip-hop">Hip-hop</option>
+            </select>
+          </div>
           <div className="flex flex-col gap-1.5">
-  <label className="text-sm text-muted">Mood</label>
-  <select
-    value={mood}
-    onChange={(e) => setMood(e.target.value)}
-    required
-    className="rounded-lg border border-white/10 bg-bg px-4 py-2.5 text-sm outline-none focus:border-gold transition-colors"
-  >
-    <option value="">Select mood</option>
-    <option value="Dark">Dark</option>
-    <option value="Uplifting">Uplifting</option>
-    <option value="Calm">Calm</option>
-    <option value="Energetic">Energetic</option>
-    <option value="Melancholic">Melancholic</option>
-    <option value="Epic">Epic</option>
-    <option value="Romantic">Romantic</option>
-  </select>
-</div>
+            <label className="text-sm text-muted">Mood</label>
+            <select
+              value={mood}
+              onChange={(e) => setMood(e.target.value)}
+              required
+              className="rounded-lg border border-white/10 bg-bg px-4 py-2.5 text-sm outline-none focus:border-gold transition-colors"
+            >
+              <option value="">Select mood</option>
+              <option value="Dark">Dark</option>
+              <option value="Uplifting">Uplifting</option>
+              <option value="Calm">Calm</option>
+              <option value="Energetic">Energetic</option>
+              <option value="Melancholic">Melancholic</option>
+              <option value="Epic">Epic</option>
+              <option value="Romantic">Romantic</option>
+            </select>
+          </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-muted">BPM</label>
             <input
@@ -175,9 +174,10 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {projects.map((project) => (
-          <div
+          <Link
             key={project.id}
-            className="rounded-2xl border border-white/10 bg-bg-soft p-6 hover:border-white/20 transition-colors"
+            to={`/project/${project.id}`}
+            className="block rounded-2xl border border-white/10 bg-bg-soft p-6 hover:border-white/20 transition-colors cursor-pointer"
           >
             <h3 className="font-semibold text-lg mb-2">{project.name}</h3>
             <p className="text-muted text-sm">
@@ -188,7 +188,7 @@ export default function Dashboard() {
                 {project.musical_key}
               </p>
             )}
-          </div>
+          </Link>
         ))}
       </div>
     </div>

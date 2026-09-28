@@ -6,6 +6,7 @@ import ReactiveVisualizer from './ReactiveVisualizer'
 
 const KEYS = ['C Major', 'A Minor', 'D Minor', 'F# Minor', 'G Major']
 const MOODS = ['Dark', 'Uplifting', 'Calm', 'Energetic', 'Melancholic', 'Epic', 'Romantic']
+const GENRES = ['Cinematic', 'Lo-fi', 'Ambient', 'Electronic', 'Classical', 'Jazz', 'Rock', 'Hip-hop']
 
 export default function Generator() {
   const [mode, setMode] = useState<'structured' | 'prompt'>('prompt')
@@ -15,6 +16,7 @@ export default function Generator() {
   const [mood, setMood] = useState('Dark')
   const [bpm, setBpm] = useState(110)
   const [prompt, setPrompt] = useState('')
+  const [genre, setGenre] = useState<string>('')
 
   const [status, setStatus] = useState<'idle' | 'queued' | 'generating' | 'ready' | 'error'>('idle')
   const [jobId, setJobId] = useState<string | null>(null)
@@ -35,11 +37,25 @@ export default function Generator() {
     setStatus('queued')
     setPredictedMood(null)
     setCurrentMidiUrl(null)
+
     try {
       const job =
         mode === 'prompt'
-          ? await generateFromPrompt(token, { project_name: projectName, prompt, key, bpm })
-          : await generateMusic(token, { project_name: projectName, key, mood, bpm })
+          ? await generateFromPrompt(token, {
+              project_name: projectName,
+              prompt,
+              key,
+              bpm,
+              genre: genre || undefined
+            })
+          : await generateMusic(token, {
+              project_name: projectName,
+              key,
+              mood,
+              bpm,
+              genre: genre || undefined
+            })
+
       setJobId(job.job_id)
       pollJobStatus(token, job.job_id)
     } catch {
@@ -49,15 +65,19 @@ export default function Generator() {
 
   const pollJobStatus = (token: string, id: string) => {
     setStatus('generating')
+
     const interval = setInterval(async () => {
       try {
         const data = await getJobStatus(token, id)
+
         if (data.status === 'finished') {
           clearInterval(interval)
           setStatus('ready')
+
           if (data.result?.predicted_mood) {
             setPredictedMood(data.result.predicted_mood)
           }
+
           setCurrentMidiUrl(getMidiDownloadUrl(id, token))
         } else if (data.status === 'failed') {
           clearInterval(interval)
@@ -78,15 +98,20 @@ export default function Generator() {
         <button
           onClick={() => setMode('prompt')}
           className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-            mode === 'prompt' ? 'bg-gold text-black' : 'border border-white/10 text-muted'
+            mode === 'prompt'
+              ? 'bg-gold text-black'
+              : 'border border-white/10 text-muted'
           }`}
         >
           Describe it
         </button>
+
         <button
           onClick={() => setMode('structured')}
           className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-            mode === 'structured' ? 'bg-gold text-black' : 'border border-white/10 text-muted'
+            mode === 'structured'
+              ? 'bg-gold text-black'
+              : 'border border-white/10 text-muted'
           }`}
         >
           Pick parameters
@@ -99,6 +124,7 @@ export default function Generator() {
       >
         <div className="flex flex-col gap-1.5">
           <label className="text-sm text-muted">Project Name</label>
+
           <input
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
@@ -109,7 +135,10 @@ export default function Generator() {
 
         {mode === 'prompt' ? (
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-muted">Describe the mood you want</label>
+            <label className="text-sm text-muted">
+              Describe the mood you want
+            </label>
+
             <input
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -121,13 +150,16 @@ export default function Generator() {
         ) : (
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-muted">Mood</label>
+
             <select
               value={mood}
               onChange={(e) => setMood(e.target.value)}
               className="rounded-lg border border-white/10 bg-bg px-4 py-2.5 text-sm outline-none focus:border-gold transition-colors"
             >
               {MOODS.map((m) => (
-                <option key={m} value={m}>{m}</option>
+                <option key={m} value={m}>
+                  {m}
+                </option>
               ))}
             </select>
           </div>
@@ -136,19 +168,23 @@ export default function Generator() {
         <div className="grid grid-cols-2 gap-5">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-muted">Key</label>
+
             <select
               value={key}
               onChange={(e) => setKey(e.target.value)}
               className="rounded-lg border border-white/10 bg-bg px-4 py-2.5 text-sm outline-none focus:border-gold transition-colors"
             >
               {KEYS.map((k) => (
-                <option key={k} value={k}>{k}</option>
+                <option key={k} value={k}>
+                  {k}
+                </option>
               ))}
             </select>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-muted">BPM: {bpm}</label>
+
             <input
               type="range"
               min={60}
@@ -158,6 +194,25 @@ export default function Generator() {
               className="accent-gold mt-2.5"
             />
           </div>
+        </div>
+
+        {/* Genre dropdown */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm text-muted">Genre (optional)</label>
+
+          <select
+            value={genre}
+            onChange={(e) => setGenre(e.target.value)}
+            className="rounded-lg border border-white/10 bg-bg px-4 py-2.5 text-sm outline-none focus:border-gold transition-colors"
+          >
+            <option value="">Default (mood-based)</option>
+
+            {GENRES.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </select>
         </div>
 
         <button
@@ -176,27 +231,46 @@ export default function Generator() {
       {status === 'ready' && jobId && currentMidiUrl && (
         <div className="max-w-xl mt-8 rounded-2xl border border-white/10 bg-bg-soft p-8">
           <h3 className="font-semibold mb-2">Your track</h3>
-          {predictedMood && <p className="text-sm text-gold mb-4">Detected mood: {predictedMood}</p>}
+
+          {predictedMood && (
+            <p className="text-sm text-gold mb-4">
+              Detected mood: {predictedMood}
+            </p>
+          )}
 
           {/* @ts-expect-error - html-midi-player is a web component without TS types */}
-          <midi-player ref={playerRef} src={currentMidiUrl} sound-font style={{ width: '100%' }} />
+          <midi-player
+            ref={playerRef}
+            src={currentMidiUrl}
+            sound-font
+            style={{ width: '100%' }}
+          />
 
           <div className="mt-3">
             <ReactiveVisualizer playerRef={playerRef} />
           </div>
 
-          <a href={currentMidiUrl} download className="inline-block mt-4 text-sm text-gold hover:underline">
+          <a
+            href={currentMidiUrl}
+            download
+            className="inline-block mt-4 text-sm text-gold hover:underline"
+          >
             Download MIDI
           </a>
 
           <div className="mt-6">
-            <TimelineEditor midiUrl={currentMidiUrl} onExport={(url) => setCurrentMidiUrl(url)} />
+            <TimelineEditor
+              midiUrl={currentMidiUrl}
+              onExport={(url) => setCurrentMidiUrl(url)}
+            />
           </div>
         </div>
       )}
 
       {status === 'error' && (
-        <p className="mt-6 text-red-400">Something went wrong. Please try again.</p>
+        <p className="mt-6 text-red-400">
+          Something went wrong. Please try again.
+        </p>
       )}
     </div>
   )

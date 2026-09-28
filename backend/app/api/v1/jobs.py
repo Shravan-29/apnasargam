@@ -8,10 +8,9 @@ from app.core.queue import generation_queue, redis_conn
 from app.core.security import get_current_user, decode_access_token
 from app.db.session import get_db
 from app.models.user import User
-from app.jobs.tasks import generate_music_task
-from app.schemas.generation import GenerationRequest
-from app.schemas.generation import GenerationRequest, PromptGenerationRequest
+from app.models.project import Project
 from app.jobs.tasks import generate_music_task, generate_from_prompt_task
+from app.schemas.generation import GenerationRequest, PromptGenerationRequest
 
 router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 
@@ -27,8 +26,12 @@ def enqueue_generation(
         mood=request.mood,
         bpm=request.bpm,
         project_name=request.project_name,
+        user_id=current_user.id,
+        genre=request.genre,
+        style=request.style,
     )
     return {"job_id": job.id, "status": "queued"}
+
 
 @router.post("/generate-from-prompt")
 def enqueue_prompt_generation(
@@ -41,8 +44,12 @@ def enqueue_prompt_generation(
         key=request.key,
         bpm=request.bpm,
         project_name=request.project_name,
+        user_id=current_user.id,
+        genre=request.genre,
+        style=request.style,
     )
     return {"job_id": job.id, "status": "queued"}
+
 
 @router.get("/{job_id}")
 def get_job_status(job_id: str, current_user: User = Depends(get_current_user)):
@@ -64,10 +71,6 @@ def download_midi(
     token: str,
     db: Session = Depends(get_db),
 ):
-    # NOTE: this endpoint takes the token as a query param instead of an
-    # Authorization header, because the <midi-player> web component fetches
-    # this URL internally and cannot attach custom headers. Browsers allow
-    # media elements to set a `src` URL but not custom request headers.
     try:
         user_id = decode_access_token(token)
     except Exception:
@@ -88,6 +91,24 @@ def download_midi(
     filename = job.result.get("midi_file")
     file_path = os.path.join("generated_midi", filename)
 
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="MIDI file not found on disk")
+
+    return FileResponse(file_path, media_type="audio/midi", filename=filename)
+
+
+@router.get("/midi-by-filename/{filename}")
+def get_midi_by_filename(filename: str, token: str, db: Session = Depends(get_db)):
+    try:
+        user_id = decode_access_token(token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    project = db.query(Project).filter(Project.midi_filename == filename, Project.user_id == user_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Track not found")
+
+    file_path = os.path.join("generated_midi", filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="MIDI file not found on disk")
 
