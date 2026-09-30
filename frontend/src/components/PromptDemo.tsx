@@ -1,41 +1,49 @@
+import { Link } from 'react-router-dom'
+
 export default function PromptDemo() {
-  const tags = [
-    { label: 'Key: A Minor' },
-    { label: 'Tempo: 110 BPM' },
-    { label: 'Mood: Tense' },
-    { label: 'Instruments: Synth, Strings' },
-    { label: 'Structure: A–B–A' },
+  const isLoggedIn = !!localStorage.getItem('apnasargam_token')
+
+  const steps = [
+    { label: 'You type', value: 'Dark cinematic melody, slow and tense' },
+    { label: 'Classifier reads the mood', value: 'Dark' },
+    { label: 'Model writes the melody', value: 'Temporal convolutional network' },
+    { label: 'Theory layer keeps it in key', value: 'Scale and chord constraints' },
+    { label: 'You get', value: '1-2 minute MIDI track you can edit' },
   ]
 
   return (
     <section id="generate" className="max-w-6xl mx-auto px-12 py-36">
       <div className="text-indigo text-sm uppercase tracking-widest font-semibold mb-4">
-        The Generator
+        How it works
       </div>
       <h2 className="font-display text-4xl font-semibold max-w-xl leading-snug">
         Describe it in your own words. It composes in music theory.
       </h2>
       <p className="mt-4 text-muted max-w-lg">
-        Every prompt is parsed into real musical parameters — key, tempo,
-        chord function — not guesswork.
+        A text classifier picks the mood from your sentence, a small neural
+        network writes the melody, and a theory layer keeps every note in key.
       </p>
 
-      <div className="mt-16 rounded-3xl border border-white/10 bg-bg-soft p-10 flex flex-col gap-6">
-        <div className="flex items-center gap-3 rounded-full border border-white/10 px-6 py-4 text-base">
-          Dark cinematic cyberpunk melody at 110 BPM
-          <span className="w-0.5 h-4 bg-gold animate-pulse" />
-        </div>
+      <div className="mt-16 rounded-3xl border border-white/10 bg-bg-soft p-10 flex flex-col gap-4">
+        {steps.map((step, index) => (
+          <div
+            key={step.label}
+            className="flex items-center gap-4 rounded-2xl border border-white/10 px-6 py-4"
+          >
+            <div className="w-7 h-7 rounded-full bg-gold text-black text-xs font-bold flex items-center justify-center shrink-0">
+              {index + 1}
+            </div>
+            <div className="text-sm text-muted w-64 shrink-0">{step.label}</div>
+            <div className="text-sm">{step.value}</div>
+          </div>
+        ))}
 
-        <div className="flex flex-wrap gap-2.5">
-          {tags.map((tag) => (
-            <span
-              key={tag.label}
-              className="px-4 py-2 rounded-full bg-indigo/10 border border-indigo/25 text-indigo-200 text-xs font-medium"
-            >
-              {tag.label}
-            </span>
-          ))}
-        </div>
+        <Link
+          to={isLoggedIn ? '/generate' : '/register'}
+          className="mt-4 self-start px-6 py-3 rounded-full bg-gold text-black text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+        >
+          Try it yourself
+        </Link>
       </div>
     </section>
   )

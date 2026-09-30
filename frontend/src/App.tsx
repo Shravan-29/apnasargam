@@ -5,6 +5,7 @@ import Login from './components/Login'
 import Register from './components/Register'
 import Generator from './components/Generator'
 import ProjectDetail from './components/ProjectDetail'
+import ProtectedLayout from './components/ProtectedLayout'
 
 function App() {
   return (
@@ -13,9 +14,12 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/generate" element={<Generator />} />
-        <Route path="/project/:id" element={<ProjectDetail />} />
+
+        <Route element={<ProtectedLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/generate" element={<Generator />} />
+          <Route path="/project/:id" element={<ProjectDetail />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )

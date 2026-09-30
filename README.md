@@ -42,7 +42,7 @@ Things I tried that did not help (kept in the commit history): more CPU threads 
 - The intent classifier only covers 5 of the 7 moods (Calm and Energetic have no equivalent label in the public dataset). Those two are still available through the manual mood picker.
 - Playback uses a general MIDI soundfont in the browser, so instruments like flute or sitar sound synthetic.
 - The in-browser player pulls in an old dependency chain that `npm audit` flags. It is client side only and there is no upstream fix, so I documented it instead of hiding it.
-- No automated tests yet, and not deployed anywhere yet.
+- Not deployed anywhere yet. The backend has 41 pytest tests (auth, ownership checks, MIDI export, mood and genre config). The job queue endpoints and the frontend are not covered by tests.
 
 ## Stack
 
@@ -81,6 +81,14 @@ npm run dev
 ```
 
 The `SimpleWorker` flag is only needed on Windows because the default RQ worker uses `fork`.
+
+## Tests
+
+cd backend
+pip install pytest httpx
+python -m pytest -v
+
+API tests run against a temporary in-memory SQLite database, so no Postgres or Redis is needed. The trained model files must exist because the app loads the model on import.
 
 ## License
 

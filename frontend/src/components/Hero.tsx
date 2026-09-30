@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import * as THREE from 'three'
 
 export default function Hero() {
   const canvasWrapRef = useRef<HTMLDivElement>(null)
+  const isLoggedIn = !!localStorage.getItem('apnasargam_token')
 
   useEffect(() => {
     const wrap = canvasWrapRef.current
@@ -152,16 +154,22 @@ export default function Hero() {
           , note by note.
         </h1>
         <p className="mt-6 text-muted text-lg max-w-md">
-          ApnaSargam listens to a mood, a tempo, a feeling — and composes
+          ApnaSargam listens to a mood, a tempo, a feeling, and composes
           original melodies, harmonies and rhythm with you, not for you.
         </p>
         <div className="mt-9 flex gap-4 pointer-events-auto">
-          <button className="px-7 py-4 rounded-full bg-gold text-black font-semibold hover:-translate-y-0.5 transition-transform">
+          <Link
+            to={isLoggedIn ? '/generate' : '/register'}
+            className="px-7 py-4 rounded-full bg-gold text-black font-semibold hover:-translate-y-0.5 transition-transform"
+          >
             Start Composing
-          </button>
-          <button className="px-7 py-4 rounded-full border border-white/10 hover:border-white/25 transition-colors">
-            See it think
-          </button>
+          </Link>
+          <a
+            href="#generate"
+            className="px-7 py-4 rounded-full border border-white/10 hover:border-white/25 transition-colors"
+          >
+            See how it works
+          </a>
         </div>
       </div>
     </section>
