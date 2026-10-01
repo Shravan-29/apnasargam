@@ -17,6 +17,9 @@ export default function Navbar() {
         <a href="#learn" className="hover:text-text transition-colors">
           Features
         </a>
+        <Link to="/lab" className="hover:text-text transition-colors">
+          Research Lab
+        </Link>
       </div>
 
       <div className="flex items-center gap-4">

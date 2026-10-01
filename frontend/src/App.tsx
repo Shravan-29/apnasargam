@@ -6,6 +6,7 @@ import Register from './components/Register'
 import Generator from './components/Generator'
 import ProjectDetail from './components/ProjectDetail'
 import ProtectedLayout from './components/ProtectedLayout'
+import ResearchLab from './components/ResearchLab'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/lab" element={<ResearchLab />} />
 
         <Route element={<ProtectedLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
