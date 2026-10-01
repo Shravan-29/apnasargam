@@ -1,0 +1,46 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Settings() is instantiated at import time and requires these
+      # env vars to exist. Tests never actually connect to Postgres or
+      # Redis (the DB is overridden with in-memory SQLite, and no test
+      # triggers music generation, which is the only thing that touches
+      # Redis), so the values just need to be present, not real.
+      - name: Create test environment file
+        run: |
+          cat > .env << EOF
+          DATABASE_URL=postgresql://user:pass@localhost:5432/placeholder
+          REDIS_URL=redis://localhost:6379/0
+          SECRET_KEY=ci-placeholder-secret-key
+          ENVIRONMENT=test
+          RESEND_API_KEY=ci-placeholder-key
+          EOF
+
+      - name: Run tests
+        run: python -m pytest -v
