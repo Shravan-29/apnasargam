@@ -39,7 +39,6 @@ jobs:
           REDIS_URL=redis://localhost:6379/0
           SECRET_KEY=ci-placeholder-secret-key
           ENVIRONMENT=test
-          RESEND_API_KEY=ci-placeholder-key
           EOF
 
       - name: Run tests
