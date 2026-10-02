@@ -30,7 +30,7 @@ const TOUR_STEPS = [
   },
 ]
 
-export default function TimelineEditor({ midiUrl, onExport }: { midiUrl: string; onExport: (url: string) => void }) {
+export default function TimelineEditor({ midiUrl, onExport }: { midiUrl: string; onExport: (url: string, blob: Blob) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [originalMidi, setOriginalMidi] = useState<Midi | null>(null)
   const [clips, setClips] = useState<Clip[]>([])
@@ -168,7 +168,7 @@ export default function TimelineEditor({ midiUrl, onExport }: { midiUrl: string;
     const bytes = newMidi.toArray()
     const blob = new Blob([bytes as BlobPart], { type: 'audio/midi' })
     const url = URL.createObjectURL(blob)
-    onExport(url)
+    onExport(url, blob)
   }
 
   return (

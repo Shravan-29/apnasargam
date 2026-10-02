@@ -1,8 +1,6 @@
 const API_BASE_URL = 'http://localhost:8000'
 const TOKEN_KEY = 'apnasargam_token'
 
-// If the server says the token is invalid or expired, clear it and send the
-// user to the login page instead of leaving them on a broken screen.
 function handleSessionExpired(): never {
   localStorage.removeItem(TOKEN_KEY)
   window.location.href = '/login'
@@ -42,6 +40,43 @@ export async function createProject(
     body: project,
   })
   if (!response.ok) throw new Error('Failed to create project')
+  return response.json()
+}
+
+export async function updateProject(
+  token: string,
+  projectId: number,
+  updates: { name?: string; genre?: string; mood?: string; bpm?: number; musical_key?: string }
+) {
+  const response = await authorizedFetch(`${API_BASE_URL}/api/v1/projects/${projectId}`, token, {
+    method: 'PATCH',
+    body: updates,
+  })
+  if (!response.ok) throw new Error('Failed to update project')
+  return response.json()
+}
+
+export async function deleteProject(token: string, projectId: number) {
+  const response = await authorizedFetch(`${API_BASE_URL}/api/v1/projects/${projectId}`, token, {
+    method: 'DELETE',
+  })
+  if (!response.ok) throw new Error('Failed to delete project')
+}
+
+export async function saveEditedMidi(token: string, projectId: number, blob: Blob) {
+  // Multipart upload: do not set Content-Type manually, the browser
+  // sets it (with the correct boundary) from the FormData body.
+  const formData = new FormData()
+  formData.append('file', blob, 'edited.mid')
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/projects/${projectId}/midi`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  })
+
+  if (response.status === 401) return handleSessionExpired()
+  if (!response.ok) throw new Error('Failed to save edited track')
   return response.json()
 }
 
