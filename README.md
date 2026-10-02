@@ -1,4 +1,5 @@
 # ApnaSargam
+![Backend Tests](https://github.com/Shravan-29/apnasargam/actions/workflows/backend-tests.yml/badge.svg)
 
 A music generation platform I built end to end. You either describe a track in plain text ("sweet romantic love song") or pick the mood, key, BPM and genre yourself, and it composes a 1-2 minute instrumental as a MIDI file. You can play it in the browser, cut and trim it in a small timeline editor, and it gets saved to your projects.
 
