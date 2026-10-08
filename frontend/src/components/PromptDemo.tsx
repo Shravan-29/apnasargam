@@ -12,11 +12,11 @@ export default function PromptDemo() {
   ]
 
   return (
-    <section id="generate" className="max-w-6xl mx-auto px-12 py-36">
+    <section id="generate" className="max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-36">
       <div className="text-indigo text-sm uppercase tracking-widest font-semibold mb-4">
         How it works
       </div>
-      <h2 className="font-display text-4xl font-semibold max-w-xl leading-snug">
+      <h2 className="font-display text-3xl md:text-4xl font-semibold max-w-xl leading-snug">
         Describe it in your own words. It composes in music theory.
       </h2>
       <p className="mt-4 text-muted max-w-lg">
@@ -24,17 +24,19 @@ export default function PromptDemo() {
         network writes the melody, and a theory layer keeps every note in key.
       </p>
 
-      <div className="mt-16 rounded-3xl border border-white/10 bg-bg-soft p-10 flex flex-col gap-4">
+      <div className="mt-12 md:mt-16 rounded-3xl border border-white/10 bg-bg-soft p-5 md:p-10 flex flex-col gap-4">
         {steps.map((step, index) => (
           <div
             key={step.label}
-            className="flex items-center gap-4 rounded-2xl border border-white/10 px-6 py-4"
+            className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 rounded-2xl border border-white/10 px-5 md:px-6 py-4"
           >
-            <div className="w-7 h-7 rounded-full bg-gold text-black text-xs font-bold flex items-center justify-center shrink-0">
-              {index + 1}
+            <div className="flex items-center gap-3 sm:contents">
+              <div className="w-7 h-7 rounded-full bg-gold text-black text-xs font-bold flex items-center justify-center shrink-0">
+                {index + 1}
+              </div>
+              <div className="text-sm text-muted sm:w-64 shrink-0">{step.label}</div>
             </div>
-            <div className="text-sm text-muted w-64 shrink-0">{step.label}</div>
-            <div className="text-sm">{step.value}</div>
+            <div className="text-sm pl-10 sm:pl-0">{step.value}</div>
           </div>
         ))}
 

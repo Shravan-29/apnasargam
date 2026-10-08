@@ -139,14 +139,14 @@ export default function Hero() {
   }, [])
 
   return (
-    <section className="relative h-screen flex items-center px-12 overflow-hidden bg-bg">
+    <section className="relative h-screen flex items-center px-6 md:px-12 overflow-hidden bg-bg">
       <div ref={canvasWrapRef} className="absolute inset-0 z-0" />
 
       <div className="relative z-10 max-w-xl pointer-events-none">
         <div className="text-gold text-sm uppercase tracking-widest font-semibold mb-5">
           AI Music Composition
         </div>
-        <h1 className="font-display text-6xl font-bold leading-tight">
+        <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold leading-tight">
           Turn intent into{' '}
           <span className="bg-gradient-to-r from-gold to-yellow-200 bg-clip-text text-transparent">
             music
@@ -157,16 +157,16 @@ export default function Hero() {
           ApnaSargam listens to a mood, a tempo, a feeling, and composes
           original melodies, harmonies and rhythm with you, not for you.
         </p>
-        <div className="mt-9 flex gap-4 pointer-events-auto">
+        <div className="mt-9 flex flex-col sm:flex-row gap-3 sm:gap-4 pointer-events-auto">
           <Link
             to={isLoggedIn ? '/generate' : '/register'}
-            className="px-7 py-4 rounded-full bg-gold text-black font-semibold hover:-translate-y-0.5 transition-transform"
+            className="px-7 py-4 rounded-full bg-gold text-black font-semibold hover:-translate-y-0.5 transition-transform text-center"
           >
             Start Composing
           </Link>
           <a
             href="#generate"
-            className="px-7 py-4 rounded-full border border-white/10 hover:border-white/25 transition-colors"
+            className="px-7 py-4 rounded-full border border-white/10 hover:border-white/25 transition-colors text-center"
           >
             See how it works
           </a>

@@ -8,7 +8,6 @@ interface Clip {
   sourceEnd: number
 }
 
-const PIXELS_PER_SECOND = 60
 const TOUR_STORAGE_KEY = 'apnasargam_seen_editor_tour'
 
 const TOUR_STEPS = [
@@ -31,13 +30,32 @@ const TOUR_STEPS = [
 ]
 
 export default function TimelineEditor({ midiUrl, onExport }: { midiUrl: string; onExport: (url: string, blob: Blob) => void }) {
+  const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [canvasWidth, setCanvasWidth] = useState(800)
+
   const [originalMidi, setOriginalMidi] = useState<Midi | null>(null)
   const [clips, setClips] = useState<Clip[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [playheadTime, setPlayheadTime] = useState(0)
 
   const [tourStep, setTourStep] = useState<number | null>(null)
+
+  // Timeline width (and therefore pixels-per-second) tracks the actual
+  // rendered width of the wrapper, so clip positions and hit-testing
+  // stay accurate at any viewport size instead of assuming a fixed
+  // 800px canvas that gets visually squeezed on narrower screens.
+  useEffect(() => {
+    const wrap = wrapRef.current
+    if (!wrap) return
+    const update = () => setCanvasWidth(wrap.getBoundingClientRect().width)
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(wrap)
+    return () => observer.disconnect()
+  }, [])
+
+  const pixelsPerSecond = originalMidi ? Math.max(canvasWidth / Math.max(originalMidi.duration, 1), 4) : 60
 
   useEffect(() => {
     const alreadySeen = localStorage.getItem(TOUR_STORAGE_KEY)
@@ -73,36 +91,43 @@ export default function TimelineEditor({ midiUrl, onExport }: { midiUrl: string;
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas || canvasWidth === 0) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    canvas.width = canvasWidth * dpr
+    canvas.height = 70 * dpr
+    canvas.style.width = `${canvasWidth}px`
+    canvas.style.height = '70px'
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+    ctx.clearRect(0, 0, canvasWidth, 70)
     ctx.fillStyle = '#0A0A0F'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillRect(0, 0, canvasWidth, 70)
 
     let cursorX = 4
     clips.forEach((clip) => {
-      const width = (clip.sourceEnd - clip.sourceStart) * PIXELS_PER_SECOND
+      const width = (clip.sourceEnd - clip.sourceStart) * pixelsPerSecond
       const isSelected = clip.id === selectedId
 
       ctx.fillStyle = isSelected ? '#E8A33D' : '#6C5CE7'
-      ctx.fillRect(cursorX, 8, Math.max(width - 3, 2), canvas.height - 16)
+      ctx.fillRect(cursorX, 8, Math.max(width - 3, 2), 70 - 16)
 
       ctx.fillStyle = isSelected ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)'
       for (let x = cursorX + 4; x < cursorX + width - 4; x += 5) {
-        const barHeight = 6 + Math.random() * (canvas.height - 24)
-        ctx.fillRect(x, (canvas.height - barHeight) / 2, 2, barHeight)
+        const barHeight = 6 + Math.random() * (70 - 24)
+        ctx.fillRect(x, (70 - barHeight) / 2, 2, barHeight)
       }
 
       cursorX += width
     })
-  }, [clips, selectedId])
+  }, [clips, selectedId, canvasWidth, pixelsPerSecond])
 
   const hitTest = (clickX: number): Clip | null => {
     let cursorX = 4
     for (const clip of clips) {
-      const width = (clip.sourceEnd - clip.sourceStart) * PIXELS_PER_SECOND
+      const width = (clip.sourceEnd - clip.sourceStart) * pixelsPerSecond
       if (clickX >= cursorX && clickX <= cursorX + width) return clip
       cursorX += width
     }
@@ -173,7 +198,7 @@ export default function TimelineEditor({ midiUrl, onExport }: { midiUrl: string;
 
   return (
     <div className="relative rounded-2xl border border-white/10 bg-bg-soft p-4">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-3">
           <h3 className="font-semibold text-sm">Edit Track</h3>
           <button
@@ -194,7 +219,7 @@ export default function TimelineEditor({ midiUrl, onExport }: { midiUrl: string;
           </button>
           <button
             onClick={handleApply}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gold text-black text-xs font-semibold"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gold text-black text-xs font-semibold whitespace-nowrap"
           >
             <Download size={14} />
             Apply Edits
@@ -211,15 +236,15 @@ export default function TimelineEditor({ midiUrl, onExport }: { midiUrl: string;
         </span>
       </div>
 
-      <canvas
-        ref={canvasRef}
-        width={800}
-        height={70}
-        onClick={handleCanvasClick}
-        className="w-full rounded-lg cursor-pointer"
-      />
+      <div ref={wrapRef} className="w-full">
+        <canvas
+          ref={canvasRef}
+          onClick={handleCanvasClick}
+          className="rounded-lg cursor-pointer block w-full"
+        />
+      </div>
 
-      <div className="mt-3 flex items-center gap-3">
+      <div className="mt-3 flex flex-wrap items-center gap-3">
         <span className="text-[11px] text-muted whitespace-nowrap">Cut position</span>
         <input
           type="range"
@@ -228,7 +253,7 @@ export default function TimelineEditor({ midiUrl, onExport }: { midiUrl: string;
           step={0.1}
           value={playheadTime}
           onChange={(e) => setPlayheadTime(Number(e.target.value))}
-          className="flex-1 accent-gold"
+          className="flex-1 min-w-[120px] accent-gold"
         />
         <span className="text-xs text-muted w-14">{playheadTime.toFixed(1)}s</span>
         <button
@@ -240,7 +265,7 @@ export default function TimelineEditor({ midiUrl, onExport }: { midiUrl: string;
       </div>
 
       {tourStep !== null && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70 backdrop-blur-sm rounded-2xl p-6">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70 backdrop-blur-sm rounded-2xl p-4 md:p-6">
           <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-bg-soft p-6 relative">
             <button onClick={skipTour} className="absolute top-3 right-3 text-muted hover:text-text">
               <X size={16} />

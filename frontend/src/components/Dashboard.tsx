@@ -67,19 +67,19 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-bg text-text px-12 py-16">
-      <div className="flex items-center justify-between mb-12">
-        <h1 className="font-display text-3xl font-bold">My Projects</h1>
+    <div className="px-6 md:px-12 py-10 md:py-16">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-10 md:mb-12">
+        <h1 className="font-display text-2xl md:text-3xl font-bold">My Projects</h1>
         <div className="flex gap-3">
           <Link
             to="/generate"
-            className="px-5 py-2.5 rounded-full bg-gold text-black text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+            className="px-4 md:px-5 py-2.5 rounded-full bg-gold text-black text-sm font-semibold hover:-translate-y-0.5 transition-transform whitespace-nowrap"
           >
             Generate Music
           </Link>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="px-5 py-2.5 rounded-full bg-gold text-black text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+            className="px-4 md:px-5 py-2.5 rounded-full bg-gold text-black text-sm font-semibold hover:-translate-y-0.5 transition-transform whitespace-nowrap"
           >
             {showForm ? 'Cancel' : '+ New Project'}
           </button>
@@ -89,7 +89,7 @@ export default function Dashboard() {
       {showForm && (
         <form
           onSubmit={handleCreate}
-          className="mb-12 rounded-2xl border border-white/10 bg-bg-soft p-8 grid grid-cols-1 md:grid-cols-2 gap-5"
+          className="mb-10 md:mb-12 rounded-2xl border border-white/10 bg-bg-soft p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-5"
         >
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-muted">Name</label>
@@ -172,15 +172,15 @@ export default function Dashboard() {
         <p className="text-muted">No projects yet. Create your first one!</p>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
         {projects.map((project) => (
           <Link
             key={project.id}
             to={`/project/${project.id}`}
-            className="block rounded-2xl border border-white/10 bg-bg-soft p-6 hover:border-white/20 transition-colors cursor-pointer"
+            className="block rounded-2xl border border-white/10 bg-bg-soft p-5 md:p-6 hover:border-white/20 transition-colors cursor-pointer"
           >
-            <h3 className="font-semibold text-lg mb-2">{project.name}</h3>
-            <p className="text-muted text-sm">
+            <h3 className="font-semibold text-lg mb-2 truncate">{project.name}</h3>
+            <p className="text-muted text-sm truncate">
               {project.genre} · {project.mood} · {project.bpm} BPM
             </p>
             {project.musical_key && (

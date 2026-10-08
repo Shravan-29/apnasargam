@@ -4,7 +4,7 @@ export default function Navbar() {
   const isLoggedIn = !!localStorage.getItem('apnasargam_token')
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-12 py-5 bg-gradient-to-b from-bg/90 to-transparent backdrop-blur-sm">
+    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-5 bg-gradient-to-b from-bg/90 to-transparent backdrop-blur-sm">
       <div className="font-display font-bold text-xl flex items-center gap-2">
         <span className="w-2 h-2 rounded-full bg-gold" />
         ApnaSargam
