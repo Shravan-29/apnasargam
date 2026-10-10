@@ -6,12 +6,6 @@ from app.generation.tcn_model import MelodyTCN
 MODEL_PATH = "app/generation/trained_model.pt"
 VOCAB_PATH = "app/generation/vocabulary.pt"
 
-# Model and vocabulary are loaded lazily, on first use, rather than at
-# import time. Importing this module (which happens whenever the app
-# starts, including in CI or any environment without the trained model
-# files) used to fail immediately because torch.load ran at import time.
-# Lazy loading means the app and its tests can start without the model
-# files present; only code paths that actually generate music need them.
 _model = None
 _token_to_id = None
 _id_to_token = None
@@ -32,17 +26,34 @@ def _ensure_loaded():
     _model = model
 
 
-def generate_raw_sequence(min_duration_beats: float, temperature: float = 1.0, max_events: int = 500) -> list[tuple[int, float]]:
+def get_vocabulary():
+    _ensure_loaded()
+    return _token_to_id, _id_to_token
+
+
+def generate_raw_sequence(
+    min_duration_beats: float,
+    temperature: float = 1.0,
+    max_events: int = 500,
+    seed_tokens: list[int] | None = None,
+) -> list[tuple[int, float]]:
     """
-    Autoregressively samples tokens until the cumulative duration reaches
-    at least `min_duration_beats`, rather than a fixed token count, so
-    every requested song length is actually covered regardless of the
-    duration distribution the model happens to sample.
+    Autoregressively samples tokens until the cumulative duration of the
+    NEWLY generated tokens reaches at least `min_duration_beats`.
+
+    If `seed_tokens` is given, generation is conditioned on that context
+    (e.g. a melody detected from a user's humming) instead of a random
+    single seed - this is what lets the model continue a user's own
+    musical idea rather than starting from scratch. The seed itself is
+    not included in the returned list; only the new continuation is.
     """
     _ensure_loaded()
 
-    seed_id = random.choice(list(_id_to_token.keys()))
-    context = [seed_id]
+    if seed_tokens:
+        context = list(seed_tokens)
+    else:
+        context = [random.choice(list(_id_to_token.keys()))]
+
     generated = []
     total_duration = 0.0
 

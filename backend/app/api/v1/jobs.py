@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from rq.job import Job
 from sqlalchemy.orm import Session
@@ -9,7 +9,7 @@ from app.core.security import get_current_user, decode_access_token
 from app.db.session import get_db
 from app.models.user import User
 from app.models.project import Project
-from app.jobs.tasks import generate_music_task, generate_from_prompt_task
+from app.jobs.tasks import generate_music_task, generate_from_prompt_task, generate_from_hum_task
 from app.schemas.generation import GenerationRequest, PromptGenerationRequest
 
 router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
@@ -47,6 +47,29 @@ def enqueue_prompt_generation(
         user_id=current_user.id,
         genre=request.genre,
         style=request.style,
+    )
+    return {"job_id": job.id, "status": "queued"}
+
+
+@router.post("/generate-from-hum")
+def enqueue_hum_generation(
+    project_name: str = Form(...),
+    bpm: int = Form(...),
+    mood: str = Form("Uplifting"),
+    genre: str | None = Form(None),
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    audio_bytes = file.file.read()
+
+    job = generation_queue.enqueue(
+        generate_from_hum_task,
+        audio_bytes=audio_bytes,
+        bpm=bpm,
+        mood=mood,
+        project_name=project_name,
+        user_id=current_user.id,
+        genre=genre,
     )
     return {"job_id": job.id, "status": "queued"}
 
@@ -89,8 +112,10 @@ def download_midi(
         raise HTTPException(status_code=400, detail="Job not finished yet")
 
     filename = job.result.get("midi_file")
-    file_path = os.path.join("generated_midi", filename)
+    if not filename:
+        raise HTTPException(status_code=400, detail=job.result.get("error", "Generation failed"))
 
+    file_path = os.path.join("generated_midi", filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="MIDI file not found on disk")
 

@@ -7,6 +7,7 @@ import {
   updateProject,
   deleteProject,
   saveEditedMidi,
+  getSimilarProjects,
 } from '../api'
 import ReactiveVisualizer from './ReactiveVisualizer'
 import TimelineEditor from './TimelineEditor'
@@ -20,6 +21,55 @@ interface Project {
   musical_key: string | null
   midi_filename: string | null
   created_at: string
+}
+
+interface SimilarTrack {
+  id: number
+  name: string
+  genre: string | null
+  mood: string | null
+  bpm: number | null
+  similarity: number
+}
+
+function SimilarTracks({ projectId }: { projectId: number }) {
+  const [tracks, setTracks] = useState<SimilarTrack[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const token = localStorage.getItem('apnasargam_token')
+    if (!token) return
+    getSimilarProjects(token, projectId)
+      .then(setTracks)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [projectId])
+
+  if (loading) return null
+  if (tracks.length === 0) return null
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-bg-soft p-6 md:p-8 mt-6">
+      <h3 className="font-semibold text-sm mb-4">Tracks like this one</h3>
+      <div className="flex flex-col gap-3">
+        {tracks.map((track) => (
+          <Link
+            key={track.id}
+            to={`/project/${track.id}`}
+            className="flex items-center justify-between rounded-xl border border-white/10 p-3.5 hover:border-white/25 transition-colors"
+          >
+            <div>
+              <p className="text-sm font-medium">{track.name}</p>
+              <p className="text-xs text-muted mt-0.5">
+                {[track.genre, track.mood, track.bpm ? `${track.bpm} BPM` : null].filter(Boolean).join(' · ')}
+              </p>
+            </div>
+            <span className="text-xs text-gold shrink-0 ml-3">{Math.round(track.similarity * 100)}% match</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export default function ProjectDetail() {
@@ -270,6 +320,8 @@ export default function ProjectDetail() {
           <p className="text-muted text-sm">No generated audio for this project yet.</p>
         )}
       </div>
+
+      {midiUrl && <SimilarTracks projectId={project.id} />}
     </div>
   )
 }

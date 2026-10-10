@@ -1,8 +1,16 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { generateMusic, generateFromPrompt, getJobStatus, getMidiDownloadUrl, fetchProjects } from '../api'
+import {
+  generateMusic,
+  generateFromPrompt,
+  generateFromHum,
+  getJobStatus,
+  getMidiDownloadUrl,
+  fetchProjects,
+} from '../api'
 import TimelineEditor from './TimelineEditor'
 import ReactiveVisualizer from './ReactiveVisualizer'
+import HumRecorder from './HumRecorder'
 
 const KEYS = ['C Major', 'A Minor', 'D Minor', 'F# Minor', 'G Major']
 const MOODS = ['Dark', 'Uplifting', 'Calm', 'Energetic', 'Melancholic', 'Epic', 'Romantic']
@@ -14,6 +22,14 @@ interface RecentProject {
   genre: string | null
   mood: string | null
   bpm: number | null
+}
+
+function GlassCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-6">
+      {children}
+    </div>
+  )
 }
 
 function RecentTracks({ refreshKey }: { refreshKey: number }) {
@@ -30,21 +46,18 @@ function RecentTracks({ refreshKey }: { refreshKey: number }) {
   }, [refreshKey])
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-bg-soft p-6">
+    <GlassCard>
       <h3 className="font-semibold text-sm mb-4">Recent Tracks</h3>
-
       {loading && <p className="text-xs text-muted">Loading...</p>}
-
       {!loading && projects.length === 0 && (
         <p className="text-xs text-muted">Your generated tracks will show up here.</p>
       )}
-
       <div className="flex flex-col gap-3">
         {projects.map((project) => (
           <Link
             key={project.id}
             to={`/project/${project.id}`}
-            className="rounded-xl border border-white/10 p-3.5 hover:border-white/25 transition-colors"
+            className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5 hover:border-white/25 hover:bg-white/[0.06] transition-colors"
           >
             <p className="text-sm font-medium truncate">{project.name}</p>
             <p className="text-xs text-muted mt-1">
@@ -55,30 +68,46 @@ function RecentTracks({ refreshKey }: { refreshKey: number }) {
           </Link>
         ))}
       </div>
-
       <Link to="/dashboard" className="block mt-4 text-xs text-gold hover:underline">
         View all projects
       </Link>
-    </div>
+    </GlassCard>
   )
 }
 
-function Tips() {
+function Tips({ mode }: { mode: 'structured' | 'prompt' | 'hum' }) {
+  const hints: Record<typeof mode, string[]> = {
+    prompt: [
+      'Calm and Uplifting moods generate sparser, gentler melodies.',
+      'Energetic and Rock/Electronic genres add a drum track automatically.',
+      'Indian folk style ignores Key and Genre and picks a raga from the mood instead.',
+      'Every track is 1-2 minutes: intro, verse, chorus, verse, chorus, outro.',
+    ],
+    structured: [
+      'Calm and Uplifting moods generate sparser, gentler melodies.',
+      'Energetic and Rock/Electronic genres add a drum track automatically.',
+      'Indian folk style ignores Key and Genre and picks a raga from the mood instead.',
+      'Every track is 1-2 minutes: intro, verse, chorus, verse, chorus, outro.',
+    ],
+    hum: [
+      'Hum a short, clear melody (5-10 seconds) into your mic.',
+      'A quiet room and humming close to the mic gives better pitch detection.',
+      'The AI continues your hum in a similar style rather than generating something unrelated.',
+      'This mode is melody-only, no chord accompaniment is added.',
+    ],
+  }
   return (
-    <div className="rounded-2xl border border-white/10 bg-bg-soft p-6">
+    <GlassCard>
       <h3 className="font-semibold text-sm mb-3">Tips</h3>
       <ul className="text-xs text-muted flex flex-col gap-2 leading-relaxed">
-        <li>Calm and Uplifting moods generate sparser, gentler melodies.</li>
-        <li>Energetic and Rock/Electronic genres add a drum track automatically.</li>
-        <li>Indian folk style ignores Key and Genre and picks a raga from the mood instead.</li>
-        <li>Every track is 1-2 minutes: intro, verse, chorus, verse, chorus, outro.</li>
+        {hints[mode].map((h) => <li key={h}>{h}</li>)}
       </ul>
-    </div>
+    </GlassCard>
   )
 }
 
 export default function Generator() {
-  const [mode, setMode] = useState<'structured' | 'prompt'>('prompt')
+  const [mode, setMode] = useState<'structured' | 'prompt' | 'hum'>('prompt')
 
   const [projectName, setProjectName] = useState('')
   const [key, setKey] = useState('A Minor')
@@ -88,7 +117,11 @@ export default function Generator() {
   const [genre, setGenre] = useState('')
   const [indianFolk, setIndianFolk] = useState(false)
 
+  const [humBlob, setHumBlob] = useState<Blob | null>(null)
+  const [humUrl, setHumUrl] = useState<string | null>(null)
+
   const [status, setStatus] = useState<'idle' | 'queued' | 'generating' | 'ready' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [jobId, setJobId] = useState<string | null>(null)
   const [predictedMood, setPredictedMood] = useState<string | null>(null)
   const [currentMidiUrl, setCurrentMidiUrl] = useState<string | null>(null)
@@ -104,8 +137,10 @@ export default function Generator() {
       navigate('/login')
       return
     }
+    if (mode === 'hum' && !humBlob) return
 
     setStatus('queued')
+    setErrorMessage(null)
     setPredictedMood(null)
     setCurrentMidiUrl(null)
 
@@ -113,10 +148,14 @@ export default function Generator() {
     const genreToSend = indianFolk ? undefined : genre || undefined
 
     try {
-      const job =
-        mode === 'prompt'
-          ? await generateFromPrompt(token, { project_name: projectName, prompt, key, bpm, genre: genreToSend, style })
-          : await generateMusic(token, { project_name: projectName, key, mood, bpm, genre: genreToSend, style })
+      let job
+      if (mode === 'prompt') {
+        job = await generateFromPrompt(token, { project_name: projectName, prompt, key, bpm, genre: genreToSend, style })
+      } else if (mode === 'structured') {
+        job = await generateMusic(token, { project_name: projectName, key, mood, bpm, genre: genreToSend, style })
+      } else {
+        job = await generateFromHum(token, { project_name: projectName, bpm, mood, genre: genre || undefined }, humBlob!)
+      }
       setJobId(job.job_id)
       pollJobStatus(token, job.job_id)
     } catch {
@@ -131,10 +170,13 @@ export default function Generator() {
         const data = await getJobStatus(token, id)
         if (data.status === 'finished') {
           clearInterval(interval)
-          setStatus('ready')
-          if (data.result?.predicted_mood) {
-            setPredictedMood(data.result.predicted_mood)
+          if (data.result?.status === 'failed') {
+            setStatus('error')
+            setErrorMessage(data.result.error || 'Generation failed.')
+            return
           }
+          setStatus('ready')
+          if (data.result?.predicted_mood) setPredictedMood(data.result.predicted_mood)
           setCurrentMidiUrl(getMidiDownloadUrl(id, token))
           setRefreshKey((k) => k + 1)
         } else if (data.status === 'failed') {
@@ -149,12 +191,14 @@ export default function Generator() {
   }
 
   return (
-    <div className="min-h-screen bg-bg text-text px-6 md:px-12 py-10 md:py-16">
-      <h1 className="font-display text-3xl font-bold mb-6">Generate Music</h1>
+    <div className="lg:h-full flex flex-col">
+      <div className="px-6 md:px-12 pt-6 md:pt-8 pb-4 shrink-0">
+        <h1 className="font-display text-3xl font-bold">Generate Music</h1>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 items-start">
-        <div>
-          <div className="flex gap-2 mb-8">
+      <div className="flex-1 lg:overflow-hidden grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 px-6 md:px-12 pb-8">
+        <div className="lg:h-full lg:overflow-y-auto thin-scrollbar lg:pr-2">
+          <div className="flex gap-2 mb-6 flex-wrap">
             <button
               onClick={() => setMode('prompt')}
               className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
@@ -170,6 +214,14 @@ export default function Generator() {
               }`}
             >
               Pick parameters
+            </button>
+            <button
+              onClick={() => setMode('hum')}
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
+                mode === 'hum' ? 'bg-gold text-black' : 'border border-white/10 text-muted'
+              }`}
+            >
+              Hum it
             </button>
           </div>
 
@@ -187,7 +239,7 @@ export default function Generator() {
               />
             </div>
 
-            {mode === 'prompt' ? (
+            {mode === 'prompt' && (
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm text-muted">Describe the mood you want</label>
                 <input
@@ -198,7 +250,9 @@ export default function Generator() {
                   className="rounded-lg border border-white/10 bg-bg px-4 py-2.5 text-sm outline-none focus:border-gold transition-colors"
                 />
               </div>
-            ) : (
+            )}
+
+            {(mode === 'structured' || mode === 'hum') && (
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm text-muted">Mood</label>
                 <select
@@ -213,22 +267,39 @@ export default function Generator() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-5">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-muted">Key</label>
-                <select
-                  value={key}
-                  onChange={(e) => setKey(e.target.value)}
-                  disabled={indianFolk}
-                  className="rounded-lg border border-white/10 bg-bg px-4 py-2.5 text-sm outline-none focus:border-gold transition-colors disabled:opacity-40"
-                >
-                  {KEYS.map((k) => (
-                    <option key={k} value={k}>{k}</option>
-                  ))}
-                </select>
+            {mode === 'hum' && (
+              <div className="flex flex-col gap-2">
+                <label className="text-sm text-muted">Record your hum</label>
+                <HumRecorder
+                  onRecorded={(blob, url) => {
+                    setHumBlob(blob)
+                    setHumUrl(url)
+                  }}
+                />
+                {humUrl && (
+                  <audio controls src={humUrl} className="w-full mt-2" />
+                )}
               </div>
+            )}
 
-              <div className="flex flex-col gap-1.5">
+            <div className="grid grid-cols-2 gap-5">
+              {mode !== 'hum' && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm text-muted">Key</label>
+                  <select
+                    value={key}
+                    onChange={(e) => setKey(e.target.value)}
+                    disabled={indianFolk}
+                    className="rounded-lg border border-white/10 bg-bg px-4 py-2.5 text-sm outline-none focus:border-gold transition-colors disabled:opacity-40"
+                  >
+                    {KEYS.map((k) => (
+                      <option key={k} value={k}>{k}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className={`flex flex-col gap-1.5 ${mode === 'hum' ? 'col-span-2' : ''}`}>
                 <label className="text-sm text-muted">BPM: {bpm}</label>
                 <input
                   type="range"
@@ -256,26 +327,28 @@ export default function Generator() {
               </select>
             </div>
 
-            <label className="flex items-center gap-3 rounded-lg border border-white/10 px-4 py-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={indianFolk}
-                onChange={(e) => setIndianFolk(e.target.checked)}
-                className="accent-gold w-4 h-4"
-              />
-              <div>
-                <p className="text-sm font-medium">Indian folk style</p>
-                <p className="text-xs text-muted">Uses a raga scale (Bhupali, Yaman or Bhairav) with flute, sitar and harmonium instead of key and genre.</p>
-              </div>
-            </label>
+            {mode !== 'hum' && (
+              <label className="flex items-center gap-3 rounded-lg border border-white/10 px-4 py-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={indianFolk}
+                  onChange={(e) => setIndianFolk(e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+                <div>
+                  <p className="text-sm font-medium">Indian folk style</p>
+                  <p className="text-xs text-muted">Uses a raga scale (Bhupali, Yaman or Bhairav) with flute, sitar and harmonium instead of key and genre.</p>
+                </div>
+              </label>
+            )}
 
             <button
               type="submit"
-              disabled={status === 'queued' || status === 'generating'}
+              disabled={status === 'queued' || status === 'generating' || (mode === 'hum' && !humBlob)}
               className="mt-2 rounded-full bg-gold text-black font-semibold py-3 text-sm hover:-translate-y-0.5 transition-transform disabled:opacity-50"
             >
               {status === 'idle' || status === 'ready' || status === 'error'
-                ? 'Generate'
+                ? mode === 'hum' ? 'Generate from Hum' : 'Generate'
                 : status === 'queued'
                 ? 'Queued...'
                 : 'Composing...'}
@@ -283,7 +356,7 @@ export default function Generator() {
           </form>
 
           {status === 'ready' && jobId && currentMidiUrl && (
-            <div className="mt-8 rounded-2xl border border-white/10 bg-bg-soft p-6 md:p-8">
+            <div className="mt-6 rounded-2xl border border-white/10 bg-bg-soft p-6 md:p-8">
               <h3 className="font-semibold mb-2">Your track</h3>
               {predictedMood && <p className="text-sm text-gold mb-4">Detected mood: {predictedMood}</p>}
 
@@ -305,12 +378,12 @@ export default function Generator() {
           )}
 
           {status === 'error' && (
-            <p className="mt-6 text-red-400">Something went wrong. Please try again.</p>
+            <p className="mt-6 text-red-400 text-sm">{errorMessage || 'Something went wrong. Please try again.'}</p>
           )}
         </div>
 
-        <div className="flex flex-col gap-6">
-          <Tips />
+        <div className="lg:h-full lg:overflow-y-auto thin-scrollbar lg:pr-1 flex flex-col gap-6">
+          <Tips mode={mode} />
           <RecentTracks refreshKey={refreshKey} />
         </div>
       </div>

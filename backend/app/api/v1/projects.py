@@ -10,6 +10,7 @@ from app.models.project import Project
 from app.models.user import User
 from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
 from app.core.security import get_current_user
+from app.generation.similarity import extract_feature_vector, cosine_similarity
 
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
@@ -49,6 +50,58 @@ def get_project(
     if project.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to access this project")
     return project
+
+
+@router.get("/{project_id}/similar")
+def get_similar_projects(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Returns up to 5 of the user's other tracks ranked by cosine
+    similarity over a small musical feature vector (average pitch,
+    pitch range, note density, tempo). Computed on demand rather than
+    stored, since a user's library here is small enough that a live
+    pairwise comparison is cheap - no vector database needed at this scale.
+    """
+    target = db.query(Project).filter(Project.id == project_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if target.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this project")
+    if not target.midi_filename:
+        return []
+
+    try:
+        target_vec = extract_feature_vector(target.midi_filename, target.bpm or 120)
+    except Exception:
+        return []
+
+    others = db.query(Project).filter(
+        Project.user_id == current_user.id,
+        Project.id != project_id,
+        Project.midi_filename.isnot(None),
+    ).all()
+
+    scored = []
+    for other in others:
+        try:
+            other_vec = extract_feature_vector(other.midi_filename, other.bpm or 120)
+        except Exception:
+            continue
+        score = cosine_similarity(target_vec, other_vec)
+        scored.append({
+            "id": other.id,
+            "name": other.name,
+            "genre": other.genre,
+            "mood": other.mood,
+            "bpm": other.bpm,
+            "similarity": round(score, 3),
+        })
+
+    scored.sort(key=lambda x: x["similarity"], reverse=True)
+    return scored[:5]
 
 
 @router.patch("/{project_id}", response_model=ProjectResponse)
@@ -102,13 +155,6 @@ def upload_edited_midi(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Replaces a project's track with an edited MIDI file from the timeline
-    editor. This is what makes the cut/trim UI persist rather than being
-    a preview that disappears on refresh - the edited file becomes the
-    project's track of record, and the previous file is deleted so
-    generated_midi/ doesn't accumulate orphaned versions.
-    """
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")

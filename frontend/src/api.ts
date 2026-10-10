@@ -64,8 +64,6 @@ export async function deleteProject(token: string, projectId: number) {
 }
 
 export async function saveEditedMidi(token: string, projectId: number, blob: Blob) {
-  // Multipart upload: do not set Content-Type manually, the browser
-  // sets it (with the correct boundary) from the FormData body.
   const formData = new FormData()
   formData.append('file', blob, 'edited.mid')
 
@@ -77,6 +75,12 @@ export async function saveEditedMidi(token: string, projectId: number, blob: Blo
 
   if (response.status === 401) return handleSessionExpired()
   if (!response.ok) throw new Error('Failed to save edited track')
+  return response.json()
+}
+
+export async function getSimilarProjects(token: string, projectId: number) {
+  const response = await authorizedFetch(`${API_BASE_URL}/api/v1/projects/${projectId}/similar`, token)
+  if (!response.ok) throw new Error('Failed to fetch similar tracks')
   return response.json()
 }
 
@@ -123,6 +127,29 @@ export async function generateFromPrompt(
     method: 'POST',
     body: data,
   })
+  if (!response.ok) throw new Error('Failed to start generation')
+  return response.json()
+}
+
+export async function generateFromHum(
+  token: string,
+  data: { project_name: string; bpm: number; mood: string; genre?: string },
+  audioBlob: Blob
+) {
+  const formData = new FormData()
+  formData.append('project_name', data.project_name)
+  formData.append('bpm', String(data.bpm))
+  formData.append('mood', data.mood)
+  if (data.genre) formData.append('genre', data.genre)
+  formData.append('file', audioBlob, 'hum.wav')
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/jobs/generate-from-hum`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  })
+
+  if (response.status === 401) return handleSessionExpired()
   if (!response.ok) throw new Error('Failed to start generation')
   return response.json()
 }
