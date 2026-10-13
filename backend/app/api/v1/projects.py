@@ -10,7 +10,7 @@ from app.models.project import Project
 from app.models.user import User
 from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
 from app.core.security import get_current_user
-from app.generation.similarity import extract_feature_vector, cosine_similarity
+from app.generation.similarity import extract_feature_vector, similarity_score
 
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
@@ -59,11 +59,12 @@ def get_similar_projects(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Returns up to 5 of the user's other tracks ranked by cosine
-    similarity over a small musical feature vector (average pitch,
-    pitch range, note density, tempo). Computed on demand rather than
-    stored, since a user's library here is small enough that a live
-    pairwise comparison is cheap - no vector database needed at this scale.
+    Returns up to 5 of the user's other tracks ranked by similarity
+    over a small musical feature vector (average pitch, pitch range,
+    note density, tempo). Computed on demand rather than stored, since
+    a user's library here is small enough that a live pairwise
+    comparison is cheap - no vector database needed at this scale.
+    Matches below 5% are dropped so the panel never lists "0% match" rows.
     """
     target = db.query(Project).filter(Project.id == project_id).first()
     if not target:
@@ -90,7 +91,9 @@ def get_similar_projects(
             other_vec = extract_feature_vector(other.midi_filename, other.bpm or 120)
         except Exception:
             continue
-        score = cosine_similarity(target_vec, other_vec)
+        score = similarity_score(target_vec, other_vec)
+        if score < 0.05:
+            continue
         scored.append({
             "id": other.id,
             "name": other.name,
