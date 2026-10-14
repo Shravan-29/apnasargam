@@ -21,6 +21,8 @@ mood + key + genre -> song assembler -> TCN melody model -> scale/key constraint
 - **Song assembler**: generates each unique section once (intro, verse, chorus, outro) and arranges them as intro-verse-chorus-verse-chorus-outro. Repeated sections are reused, like a real chorus.
 - **Instrumentation and drums**: 7 moods and 8 genres (Rock, Jazz, Hip-hop, Electronic, Classical, Cinematic, Lo-fi, Ambient) each pick instruments and a rule-based drum pattern.
 - **Job queue**: generation runs as a background job (Redis + RQ worker), so the API never blocks while a song is composed.
+- **Hum to melody**: you hum into the mic, the browser encodes the recording as a WAV file (so the backend needs no ffmpeg), and a pitch detector I wrote from scratch (autocorrelation on numpy) turns it into notes. Those notes are snapped to the tokens the TCN was trained on and used as the seed, so the model continues your melody instead of starting from nothing.
+- **Similar tracks**: each track is reduced to four numbers (average pitch, pitch range, note density, tempo) and compared with a Gaussian similarity score to list tracks like the one you are viewing.
 
 ## Measured results
 
@@ -32,6 +34,8 @@ mood + key + genre -> song assembler -> TCN melody model -> scale/key constraint
 | LSTM baseline | 241,605 parameters, about 4 min training on CPU, final loss about 0.20 |
 | TCN (used) | 120,101 parameters, 3.2 min training on CPU, final loss about 0.23 |
 | One full song generation | about 0.4 s in the worker in one measured run, output around 1:40 long |
+| Pitch detector (synthetic audio) | Correct MIDI note in all 15 tone cases (5 notes x 3 sample rates); a 5-note melody with harmonics and gaps recovered note by note, also with background noise |
+| Similarity score fix | My first version (cosine on raw features) scored all 15 pairs of 6 synthetic tracks between 98.5% and 99.97%, so it could not tell calm from energetic. Replaced with a Gaussian similarity: a close calm pair scores 88%, calm vs energetic about 0% |
 
 The TCN has half the parameters of the LSTM and trained about 19% faster in my runs, with a slightly higher loss. Loss numbers are from my own runs on a 4 thread CPU and I did not average many seeds, so treat them as indicative.
 
@@ -43,7 +47,9 @@ Things I tried that did not help (kept in the commit history): more CPU threads 
 - The intent classifier only covers 5 of the 7 moods (Calm and Energetic have no equivalent label in the public dataset). Those two are still available through the manual mood picker.
 - Playback uses a general MIDI soundfont in the browser, so instruments like flute or sitar sound synthetic.
 - The in-browser player pulls in an old dependency chain that `npm audit` flags. It is client side only and there is no upstream fix, so I documented it instead of hiding it.
-- Not deployed anywhere yet. The backend has 41 pytest tests (auth, ownership checks, MIDI export, mood and genre config). The job queue endpoints and the frontend are not covered by tests.
+- Humming: the pitch detector was tested on synthetic tones and melodies, not on a range of real voices, so accuracy on real recordings is unmeasured. Repeating the same note with no pause between is detected as one long note. Output is melody only (no chords), fixed at 16 bars, and the continuation is inspired by the hum rather than an exact copy, because notes are snapped to the model's vocabulary. Hum timing is read using the BPM slider, so hum near that tempo.
+- The similarity feature uses four hand-picked features, so it captures register and tempo but not melody shape or harmony.
+- The backend has 76 pytest tests (auth, ownership, MIDI export, music config, pitch detection, similarity) and CI runs them on every push. The job queue endpoints, the hum endpoint and the frontend are not covered by tests. Not deployed anywhere yet.
 
 ## Stack
 
