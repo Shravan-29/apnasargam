@@ -6,6 +6,10 @@ A music generation platform I built end to end. You describe a track in plain te
 
 It started as my research paper, "AI-Driven Music Generation: A Creative Tool for Modern Music Composition". I lost the original college code, so this is a full rebuild of the same idea, this time with a real backend, a database and tests.
 
+## Demo Video
+
+Watch the [ApnaSargam Project Demo](https://drive.google.com/file/d/1Ocrz4Ijnwa0K2xIFE9RBfjvOa-OfTAcU/view?usp=drivesdk) to explore AI-powered music generation, hum-to-melody, MIDI playback, timeline editing, and project management.
+
 ## Screenshots
 
 | Landing page | Generator |
