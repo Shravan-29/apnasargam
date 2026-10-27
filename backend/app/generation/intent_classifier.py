@@ -7,12 +7,6 @@ import joblib
 MODEL_PATH = "app/generation/intent_classifier.joblib"
 VECTORIZER_PATH = "app/generation/intent_vectorizer.joblib"
 
-# Maps the dair-ai/emotion dataset's 6 emotion labels onto our music
-# mood taxonomy. This is a deliberate, documented simplification: the
-# public dataset does not have direct equivalents for "Calm" or
-# "Energetic", so this classifier currently supports 5 of our 7 moods.
-# Prompts implying Calm/Energetic still work via the existing keyword
-# fallback in the generation UI.
 EMOTION_ID_TO_LABEL = {0: "sadness", 1: "joy", 2: "love", 3: "anger", 4: "fear", 5: "surprise"}
 
 EMOTION_TO_MOOD = {
